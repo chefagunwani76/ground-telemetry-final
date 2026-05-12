@@ -67,7 +67,7 @@ def get_shard_iterator():
     shard_iterator = kinesis.get_shard_iterator(
         StreamName=STREAM_NAME,
         ShardId=shard_id,
-        ShardIteratorType="LATEST"
+        ShardIteratorType="TRIM_HORIZON"
     )["ShardIterator"]
 
     return shard_iterator
@@ -92,7 +92,8 @@ def consume_stream():
 
             # Update DynamoDB live aircraft state
             update_live_aircraft_state(data)
-
+            #store in RDS
+            store_history_rds(data)
         time.sleep(2)
 
 
