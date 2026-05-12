@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aircraft Dashboard</title>
+</head>
+<body>
+    <h1>Aircraft Control Dashboard<h1></h1>
+
+    {% for a in aircraft %}
+        <div style="border:1px solid black; padding:10px; margin:10px;">
+            <h2>{{ a.aircraft_id }}</h2>
+            <p>Altitude: {{ a.altitude }}</p>
+            <p>Airspeed: {{ a.airspeed }}</p>
+            <p>Engine Temp: {{ a.engine_temp }}</p>
+            <p>Fuel Level: {{ a.fuel_level }}</p>
+            <p>Last Update: {{ a.timestamp }}</p>
+        </div>
+    {% endfor %}
+
+    <a href="/history">View Flight History</a>
+</body>
+</html>

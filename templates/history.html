@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight History</title>
+</head>
+<body>
+    <h1>Flight History</h1>
+
+    {% for row in data %}
+        <div style="border:1px solid gray; padding:8px; margin:5px;">
+            <p>{{ row.aircraft_id }} | {{ row.timestamp }}</p>
+            <p>Alt: {{ row.altitude }} | Speed: {{ row.airspeed }}</p>
+            <p>Temp: {{ row.engine_temp }} | Fuel: {{ row.fuel_level }}</p>
+        </div>
+    {% endfor %}
+
+    <a href="/">Back to Dashboard</a>
+</body>
+</html>
