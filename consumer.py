@@ -32,9 +32,21 @@ def update_live_aircraft_state(data):
             "altitude": data["altitude"],
             "airspeed": data["airspeed"],
             "engine_temp": data["engine_temp"],
-            "fuel_level": data["fuel_level"]
+            "fuel_level": data["fuel_level"],
+            "health": calculate_health(data)
         }
     )
+
+def calculate_health(data):
+    fuel = data["fuel_level"]
+    temp = data["engine_temp"]
+
+    if fuel < 25 or temp > 900:
+        return "RED"
+    elif fuel < 50 or temp > 800:
+        return "YELLOW"
+    else:
+        return "GREEN"
 
 def store_history_rds(data):
     connection = get_db_connection()

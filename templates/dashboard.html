@@ -13,6 +13,18 @@
             <p>Airspeed: {{ a.airspeed }}</p>
             <p>Engine Temp: {{ a.engine_temp }}</p>
             <p>Fuel Level: {{ a.fuel_level }}</p>
+
+            <p>
+                Status:
+                {% if a.health == "GREEN" %}
+                    <span style="color:green;">🟢 GREEN</span>
+                {% elif a.health == "YELLOW" %}
+                    <span style="color:orange;">🟡 YELLOW</span>
+                {% else %}
+                    <span style="color:red;">🔴 RED</span>
+                 {% endif %}
+            </p>
+
             <p>Last Update: {{ a.timestamp }}</p>
         </div>
     {% endfor %}
