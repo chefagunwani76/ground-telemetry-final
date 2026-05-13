@@ -3,6 +3,7 @@ import json
 import time
 import pymysql
 import creds
+from datetime import datetime
 
 STREAM_NAME = "aircraft-telemetry-stream"
 
@@ -37,7 +38,7 @@ def update_live_aircraft_state(data):
 
 def store_history_rds(data):
     connection = get_db_connection()
-    #ChatGPT assistance for storing in RDS
+
     try:
         with connection.cursor() as cursor:
             sql = """
@@ -45,15 +46,33 @@ def store_history_rds(data):
                 (aircraft_id, timestamp, altitude, airspeed, engine_temp, fuel_level)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
+
+            #Convert timestamp to MySQL DATETIME format
+            ts = data["timestamp"]
+
+            #timestamp is number
+            if isinstance(ts, (int, float)):
+                ts = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+            #timestamp is ISO string like 2025-05-11T19:02:31Z
+            elif isinstance(ts, str) and "T" in ts:
+                ts = datetime.fromisoformat(ts.replace("Z", "")).strftime('%Y-%m-%d %H:%M:%S')
+
             cursor.execute(sql, (
                 data["aircraft_id"],
-                data["timestamp"],
+                ts,
                 data["altitude"],
                 data["airspeed"],
                 data["engine_temp"],
                 data["fuel_level"]
             ))
+
         connection.commit()
+        print("RDS INSERT SUCCESS") 
+
+    except Exception as e:
+        print("RDS INSERT FAILED:", e)  
+
     finally:
         connection.close()
 
