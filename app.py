@@ -10,15 +10,15 @@ app = Flask(__name__)
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table("AircraftLiveData")
 
+#Used ChatGPT to figure out how to run both .py files at same time (subprocess/thread)
 def run_simulator():
-    subprocess.run(["python3", "simulator.py"])
-
+    subprocess.run(["python3", "-u", "simulator.py"])
 
 def run_consumer():
-    subprocess.run(["python3", "consumer.py"])
+    subprocess.run(["python3", "-u", "consumer.py"])
 
 
-def start_background_services(): #utilized ChatGPT for thread
+def start_background_services():
     print("Starting backend services...")
 
     t1 = threading.Thread(target=run_simulator, daemon=True)
