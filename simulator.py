@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 STREAM_NAME = "aircraft-telemetry-stream"
 
 kinesis = boto3.client("kinesis", region_name="us-east-1")
+sts = boto3.client("sts")
+print("SIMULATOR AWS ACCOUNT:", sts.get_caller_identity())
+print("SIMULATOR REGION:", kinesis.meta.region_name)
 
 AIRCRAFT_ID = "AC101"
 

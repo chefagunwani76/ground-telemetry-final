@@ -10,6 +10,9 @@ STREAM_NAME = "aircraft-telemetry-stream"
 kinesis = boto3.client("kinesis", region_name="us-east-1")
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table("AircraftLiveData")
+sts = boto3.client("sts")
+print("CONSUMER AWS ACCOUNT:", sts.get_caller_identity())
+print("CONSUMER REGION:", kinesis.meta.region_name)
 
 
 def get_db_connection():
