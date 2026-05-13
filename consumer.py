@@ -10,9 +10,6 @@ STREAM_NAME = "aircraft-telemetry-stream"
 kinesis = boto3.client("kinesis", region_name="us-east-1")
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table("AircraftLiveData")
-sts = boto3.client("sts")
-print("CONSUMER AWS ACCOUNT:", sts.get_caller_identity())
-print("CONSUMER REGION:", kinesis.meta.region_name)
 
 
 def get_db_connection():
@@ -96,18 +93,15 @@ def get_shard_iterator():
 
 
 def consume_stream():
-    shard_iterator = get_shard_iterator()
     print("Ground station connected. Waiting for telemetry...")
 
-    #get shard id
     response = kinesis.describe_stream(StreamName=STREAM_NAME)
     shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
 
-    #start iterator
     shard_iterator = kinesis.get_shard_iterator(
         StreamName=STREAM_NAME,
         ShardId=shard_id,
-        ShardIteratorType="LATEST"
+        ShardIteratorType="TRIM_HORIZON"
     )["ShardIterator"]
 
     while True:
@@ -119,15 +113,15 @@ def consume_stream():
         records = response["Records"]
         shard_iterator = response["NextShardIterator"]
 
-        if not records:
-            print("No records in stream...")
-        else:
+        if records:
             for record in records:
                 data = json.loads(record["Data"])
                 print("Received telemetry:", data)
 
                 update_live_aircraft_state(data)
                 store_history_rds(data)
+        else:
+            print("No records in stream...")
 
         time.sleep(2)
 
