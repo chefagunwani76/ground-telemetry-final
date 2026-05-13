@@ -115,7 +115,9 @@ def consume_stream():
                     update_live_aircraft_state(data)
                     store_history_rds(data)
             else:
-                print("No records in stream...")
+                #ocassionally show if RDS has not recieved telemetry in 10 seconds
+                if int(time.time()) % 10 == 0:
+                    print("Waiting for telemetry...")
 
         shard_iterators = new_iterators
         time.sleep(2)

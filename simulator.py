@@ -25,11 +25,13 @@ def run_simulator():
 
         print("Sending telemetry--",telemetry)
 
-        response = kinesis.put_record(
-            StreamName=STREAM_NAME,
-            Data=json.dumps(telemetry),
-            PartitionKey=AIRCRAFT_ID
-        )
+        try:
+            kinesis.put_record(
+                StreamName=STREAM_NAME,
+                Data=json.dumps(telemetry),
+                PartitionKey=AIRCRAFT_ID
+            )
+        except Exception as e:
+            print("Kinesis stream error", e)
 
-        print("KINESIS RESPONSE:", response)
-        time.sleep(3)
+        time.sleep(5)
