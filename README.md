@@ -18,8 +18,8 @@ engine temp are checked and graded, where the health of the aircraft is displaye
 
 - **Flask** — Python web framework
 - **AWS EC2** — hosts the running Flask application
-- **AWS RDS (MySQL)** — relational database for [describe what you stored]
-- **AWS DynamoDB** — non-relational database for [describe what you stored]
+- **AWS RDS (MySQL)** — relational database for [historical aircraft state data]
+- **AWS DynamoDB** — non-relational database for [current aircraft state data]
 - **AWS Kinesis Stream** 
 - **GitHub Actions** — auto-deploys code from GitHub to EC2 on push
 
