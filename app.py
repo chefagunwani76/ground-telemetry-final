@@ -1,7 +1,8 @@
 from flask import Flask, render_template
 import boto3
 import threading
-import subprocess
+import simulator
+import consumer
 import pymysql
 import creds
 
@@ -11,18 +12,13 @@ dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table("AircraftLiveData")
 
 #Used ChatGPT to figure out how to run both .py files at same time (subprocess/thread)
-def run_simulator():
-    subprocess.run(["python3", "-u", "simulator.py"])
-
-def run_consumer():
-    subprocess.run(["python3", "-u", "consumer.py"])
 
 
 def start_background_services():
     print("Starting backend services...")
 
-    t1 = threading.Thread(target=run_simulator, daemon=True)
-    t2 = threading.Thread(target=run_consumer, daemon=True)
+    t1 = threading.Thread(target=simulator.run_simulator, daemon=True)
+    t2 = threading.Thread(target=consumer.consume_stream, daemon=True)
 
     t1.start()
     t2.start()
