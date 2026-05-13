@@ -12,8 +12,6 @@ dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table("AircraftLiveData")
 
 #Used ChatGPT to figure out how to run both .py files at same time (subprocess/thread)
-
-
 def start_background_services():
     print("Starting backend services...")
 

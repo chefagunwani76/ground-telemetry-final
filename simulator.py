@@ -25,10 +25,11 @@ def run_simulator():
 
         print("Sending telemetry--",telemetry)
 
-        kinesis.put_record( #add record
+        response = kinesis.put_record(
             StreamName=STREAM_NAME,
             Data=json.dumps(telemetry),
             PartitionKey=AIRCRAFT_ID
         )
 
+        print("KINESIS RESPONSE:", response)
         time.sleep(3)
