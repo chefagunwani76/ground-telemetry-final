@@ -77,52 +77,47 @@ def store_history_rds(data):
         connection.close()
 
 
-def get_shard_iterator():
-    #connect kinesis stream
-    response = kinesis.describe_stream(StreamName=STREAM_NAME) 
-    shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
-
-    #get most recent data
-    shard_iterator = kinesis.get_shard_iterator(
-        StreamName=STREAM_NAME,
-        ShardId=shard_id,
-        ShardIteratorType="LATEST"
-    )["ShardIterator"]
-
-    return shard_iterator
-
-
 def consume_stream():
     print("Ground station connected. Waiting for telemetry...")
 
+    #get all shards 
     response = kinesis.describe_stream(StreamName=STREAM_NAME)
-    shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
 
-    shard_iterator = kinesis.get_shard_iterator(
-        StreamName=STREAM_NAME,
-        ShardId=shard_id,
-        ShardIteratorType="TRIM_HORIZON"
-    )["ShardIterator"]
+    #got assitance from ChatGPT to fix this for loop
+    shard_iterators = []
+    for shard in response["StreamDescription"]["Shards"]:
+        shard_id = shard["ShardId"]
+        iterator = kinesis.get_shard_iterator(
+            StreamName=STREAM_NAME,
+            ShardId=shard_id,
+            ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        shard_iterators.append(iterator)
 
     while True:
-        response = kinesis.get_records(
-            ShardIterator=shard_iterator,
-            Limit=25
-        )
+        new_iterators = []
 
-        records = response["Records"]
-        shard_iterator = response["NextShardIterator"]
+        for shard_iterator in shard_iterators:
+            response = kinesis.get_records(
+                ShardIterator=shard_iterator,
+                Limit=25
+            )
 
-        if records:
-            for record in records:
-                data = json.loads(record["Data"])
-                print("Received telemetry:", data)
+            records = response["Records"]
+            new_iterators.append(response["NextShardIterator"])
 
-                update_live_aircraft_state(data)
-                store_history_rds(data)
-        else:
-            print("No records in stream...")
+            if records:
+                for record in records:
+                    data = json.loads(record["Data"])
+                    print("Received telemetry:", data)
 
+                    update_live_aircraft_state(data)
+                    store_history_rds(data)
+            else:
+                print("No records in stream...")
+
+        shard_iterators = new_iterators
         time.sleep(2)
 
 
