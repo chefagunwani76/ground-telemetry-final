@@ -7,7 +7,10 @@
 ## Overview
 
 <!-- Describe your project in 2-4 sentences. What does it do? Who is it for? What problem does it solve? -->
-In this project, I utitlized an AWS kinesis stream to simulate a telemetry system recieving 
+In this project, I utitlized an AWS kinesis stream to simulate a telemetry system recieving information from
+a singular simulated aircraft "AC101". Every few seconds, the simulator program sends random telemetry stats to the consumer program
+where the data is stored into a dynamoDB live data(most recent record) and a historical RDS (all previous). The fuel level and 
+engine temp are checked and graded, where the health of the aircraft is displayed along with the live data to the flask dashboard.
 
 ---
 
@@ -25,24 +28,21 @@ In this project, I utitlized an AWS kinesis stream to simulate a telemetry syste
 ## Project Structure
 
 ```
-ProjectOne/
-├── flaskapp.py          # Main Flask application — routes and app logic
-├── dbCode.py            # Database helper functions (MySQL connection + queries)
-├── creds_sample.py      # Sample Credential file (see Credential Setup)
+GroundTelemetryStation/
+├── app.py           #Main Flask application — routes and app logic
+├── simulator.py     #Simulate aircraft (Stats to be consumed by ground telemetry)
+├── consumer.py      #Database helper functions (MySQL connection + consume stream from simulator)
+├── creds_sample.py  #Sample Credential file 
+├── requirements.txt #Python dependencies
+
 
 ├── templates/
-│   ├── home.html        # Landing page
-│   ├── login.html       #Page for user to login so they can have access to RDS database queries
-│   ├── add_user.html        # Page to add user to Users database 
-│   ├── delete_user.html     # Page to delete user from Users database
-│   ├── display_users.html   # Page to display all users from Users database
-│   ├── update.html          #Page to update user lastname and city
-│   ├── query.html           #Page to prompt user which country in database they would like to query
-│   ├── all_countres.html    #Page to display all country in database
-│   ├── country_result.html  #Page Shows information about the country the user chose from dropdown menu
-├── .gitignore           # Excludes creds.py and other sensitive files
+│   ├── dashboard.html       #Landing page, displays current telemetry data & shows health of aircraft
+│   ├── history.html         #Displays history stored in RDS table (telemetry_history)
+├── .gitignore               #Excludes creds.py and other sensitive files
 └── README.md
 ```
+
 
 ---
 
@@ -52,7 +52,7 @@ ProjectOne/
 
    ```bash
    git clone https://github.com/chefagunwani76/cs178-flask-app.git
-   cd cs178-flask-app
+   cd ground-telemetry-final
    ```
 
 2. Install dependencies:
@@ -67,17 +67,17 @@ ProjectOne/
    aws configure
       input on prompts
    ```
-   create creds.py file with your username and password 
+   create creds.py file with your  own username and password 
    reference creds_sample.py
    ```
 
 4. Run the app:
 
    ```bash
-   python3 flaskapp.py
+   python3 app.py
    ```
 
-5. Open your browser and go to `http://127.0.0.1:8080`
+5. Open your browser and go to `http://52.91.47.166:5000`
 
 ---
 
@@ -86,10 +86,10 @@ ProjectOne/
 The app is deployed on an AWS EC2 instance. To view the live version:
 
 ```
-http://52.91.47.166:8080
+http://52.91.47.166:5000
 ```
 
-_(Note: the EC2 instance may not be running after project submission.)_
+_(Note: the EC2 instance will not be running after project submission.)_
 
 ---
 
@@ -97,15 +97,8 @@ _(Note: the EC2 instance may not be running after project submission.)_
 
 This project requires a `creds.py` file that is **not included in this repository** for security reasons.
 
-Create a file called `creds.py` in the project root with the following format (see `creds_sample.py` for reference):
+Create a file called `creds.py` in the project root with the following format (see `creds_sample.py` for reference)
 
-```python
-# creds.py — do not commit this file
-host = "your-rds-endpoint"
-user = "admin"
-password = "your-password"
-db = "your-database-name"
-```
 
 ---
 
@@ -116,48 +109,30 @@ db = "your-database-name"
 <!-- Briefly describe your relational database schema. What tables do you have? What are the key relationships? -->
 
 **Example:**
+- **Table name:** `[telemetry_history]`
+- `[id]` —the identifier for the record PRIMARY KEY
+- `[aircraft_id]`—the specific id of the aircraft to group all telemetry records
+- `[timestamp]` — 
+- `[altitude]` — randint altitude of aircraft
+- `[airspeed]` — randint speed of air surrounding aircraft
+- `[engine_temp]` — randint temperature of the aircraft's engine
+- `[fuel_level]` — randint fuel level
 
-- `[country]` — stores information about countries including their continent, surface area, government form, life expectancy, etc; primary key is `[Code]`
-- `[city]` — stores information about a city's district and population; foreign key `[ID]`links to `[country]`;foreign key `[CountryCode]`links to `[countrylanguage]`
-- `[countrylanguage]` — stores information about a country's language including if it is official and the amount of people in the country that speaks it; foreign key `[countrycode]`links to `[city]`; foreign key `[Language]`links to `[country]`
+**Used for:** Stores telemtry records by id of record(auto) each row is a small window of time and is sorted sequentially by timestamp (recent @ top, past @ bottom).
+The RDS is displayed in history.html, last 10 records.
 
-The JOIN query used in this project: 
-The JOIN query that was used was between city and countrylanguage to see how many people speak a language in a city.
 
 ### DynamoDB
 
 <!-- Describe your DynamoDB table. What is the partition key? What attributes does each item have? How does it connect to the rest of the app? -->
 
-- **Table name:** `[Users]`
-- **Partition key:** `[Name]`
-- **Used for:** [In order to utilize a CRUD interface for users I created a DynamoDB table. The table keeps track of users' names
-  and favorite city. The table can be updated, users can be deleted, added, and displayed. This table is used for the login.html page so a user's queries on the world database
-  can be seperate for them to access.]
+- **Table name:** `[AircraftLiveData]`
+- **Partition key:** `[aircraft_id]`
+- **Used for:** This table keeps track of only the most recent record, replaced every 6 seconds. This db is used to display that record in the the dashboard in a way that is 
+easily readable.
 
----
-
-## CRUD Operations
-
-| Operation | Route      | Description    |
-| --------- | ---------- | -------------- |
-| Create    | `/add-user` | [Adds a new user to the Users database] |
-| Read      | `/display-users` | [Displays all the users in the Users database] |
-| Update    | `/update-user` | [Updates the users last name and city in the Users database] |
-| Delete    | `/delete-user` | [Removes a user from the Users database] |
-
----
-
-## Challenges and Insights
-
-<!-- What was the hardest part? What did you learn? Any interesting design decisions? -->
-The hardest part of this assignment was getting the project properly configured with my credentials. Since I decided to use my own
-RDS instance so I could use the world database, I had a few more steps to complete the setup and my machine was having quite a few issues. 
-The primary thing I learned was how to use dynamoDB and SQL in one functional site. I found that really interesting. Keeping the functions seperate in my head
-was also pretty difficult, I kept trying to use SQL functions on the dynamoDB I created. I do not think I had an interesting design decision, I put the world db querying behind the login. So only the Users CRUD interace was avaialable if the user was not signed in.
-
----
 
 ## AI Assistance
 
 <!-- List any AI tools you used (e.g., ChatGPT) and briefly describe what you used them for. Per course policy, AI use is allowed but must be cited in code comments and noted here. -->
-I used ChatGPT for the bootstraps and formatting of the login.html, user_stats.html, all_countries.html, country_result.html files so they would all match. I am not that familiar with html so I used the AI to debug the errors I made. Also note that I tried to use ChatGPT to debug my 'country_result' and 'country_language' methods in flaskapp.py because they were not working in tandem properly and it was close to due date but the AI did not help all that much as the query join still does not work(I do not think I gave it enough information to help is likely why)(To be more clear, I gave country_result to chatgpt to debug country language and it did not work but it changed the query).
+I used ChatGPT for the bootstraps and formatting of the two html files, so they would continuously replace the data displayed with a loop. I also used ChatGPT to convert the timestamp data in a way that was readable to RDS mysql. Then I finally utilized it to debug my shardIterators in consume stream, the stream was only looking at the first iterator. Finally, I used Chat to create my start_back_ground_services function in app.py so both the simulator.py and consumer.py could run with threading. Only one was running without it.

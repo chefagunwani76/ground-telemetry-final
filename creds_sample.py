@@ -1,0 +1,6 @@
+"""
+host = "historic-telemetry-db.c2ncu6gio97y.us-east-1.rds.amazonaws.com"
+user = "YOUR_USERBNAME"
+password = "YOUR_PASSWORD"
+db = "telemetry"
+"""
