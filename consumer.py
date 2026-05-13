@@ -96,22 +96,25 @@ def consume_stream():
     shard_iterator = get_shard_iterator()
     print("Ground station connected. Waiting for telemetry...")
 
+    #get shard id
+    response = kinesis.describe_stream(StreamName=STREAM_NAME)
+    shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
+
+    #start iterator
+    shard_iterator = kinesis.get_shard_iterator(
+        StreamName=STREAM_NAME,
+        ShardId=shard_id,
+        ShardIteratorType="LATEST"
+    )["ShardIterator"]
+
     while True:
-        response = kinesis.describe_stream(StreamName=STREAM_NAME)
-        shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
-
-        shard_iterator = kinesis.get_shard_iterator(
-            StreamName=STREAM_NAME,
-            ShardId=shard_id,
-            ShardIteratorType="LATEST"
-        )["ShardIterator"]
-
         response = kinesis.get_records(
             ShardIterator=shard_iterator,
             Limit=25
         )
 
         records = response["Records"]
+        shard_iterator = response["NextShardIterator"]
 
         if not records:
             print("No records in stream...")
@@ -119,9 +122,8 @@ def consume_stream():
             for record in records:
                 data = json.loads(record["Data"])
                 print("Received telemetry:", data)
-                #add to dashboard
+
                 update_live_aircraft_state(data)
-                #add to rds database
                 store_history_rds(data)
 
         time.sleep(2)
