@@ -86,7 +86,7 @@ def get_shard_iterator():
     shard_iterator = kinesis.get_shard_iterator(
         StreamName=STREAM_NAME,
         ShardId=shard_id,
-        ShardIteratorType="TRIM_HORIZON"
+        ShardIteratorType="LATEST"
     )["ShardIterator"]
 
     return shard_iterator
@@ -105,14 +105,18 @@ def consume_stream():
         records = response["Records"]
         shard_iterator = response["NextShardIterator"]
 
-        for record in records:
-            data = json.loads(record["Data"])
-            print("Received telemetry:", data)
+        if not records:
+            print("No records in stream...")
+        else:
+            for record in records:
+                data = json.loads(record["Data"])
+                print("Received telemetry:", data)
 
-            # Update DynamoDB live aircraft state
-            update_live_aircraft_state(data)
-            #store in RDS
-            store_history_rds(data)
+                # Update DynamoDB live aircraft state
+                update_live_aircraft_state(data)
+
+                # store in RDS
+                store_history_rds(data)
         time.sleep(2)
 
 
